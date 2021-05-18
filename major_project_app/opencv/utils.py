@@ -1,3 +1,5 @@
+
+
 import csv
 import os
 import base64
@@ -52,7 +54,7 @@ def get_filtered_image(image,action):
             k+=1
         elif(i=="m"):
             flag=False   
-    print(str1)        
+            
     """
     final_digits=[]
     for i in description:
@@ -73,7 +75,8 @@ def get_filtered_image(image,action):
     flag1=False
     for i in value:
         list1.append(list(i))
-    if(int(list1[-1][0])>=int(str1)):
+    print(int(list1[-1][0]),int(str1))
+    if(int(list1[-1][0])<=int(str1)):
         flag1=True
     if(flag1==False):
 
@@ -93,9 +96,12 @@ def get_filtered_image(image,action):
             print(list1[-2])
             meter.append((list1[-2][0]))
             meter.append((list1[-1][0]))
-            date_value=(list1[-2][1]-list1[-1][1])
+            date_value=(list1[-1][1]-list1[-2][1])
+            print(date_value)
             if int(str(date_value)[0])==0:
                 date_value=1
+            else:
+                date_value=int(str(date_value)[0])
             print(meter)
             ans=int(meter[1][0:5])-int(meter[0][0:5]) 
             print(ans)
