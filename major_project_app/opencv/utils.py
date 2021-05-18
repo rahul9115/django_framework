@@ -1,20 +1,15 @@
-import cv2
-import matplotlib.pyplot as plt
-import easyocr
-import cv2 as cv
-import matplotlib.pyplot as plt
 import csv
-import boto3
 import os
 import base64
 import pandas as pd
-from django.contrib.staticfiles import finders
 from PIL import Image
 import numpy as np
 import requests
 import json
 import sqlalchemy
 from sqlalchemy import create_engine
+from datetime import date
+from datetime import datetime
 engine=sqlalchemy.create_engine("postgresql://bgnnchtclsosex:13f25d52cbda8621b0ecee9dea4bfa691e9022a98f134c4a96e2658d62711d1a@ec2-107-22-83-3.compute-1.amazonaws.com:5432/d2phjkie6l3btf")
 db=engine.connect()
 url = "https://vision.googleapis.com/v1/images:annotate"
@@ -32,8 +27,8 @@ def image_request(image_path):
 
     return response.text  
 def get_filtered_image(image,action):
-    image.save(os.path.join(workpath, 'image.jpeg'))
-    value=image_request(os.path.join(workpath,"image.jpeg"))
+    image.save(os.path.join(workpath, 'image.jpg'))
+    value=image_request(os.path.join(workpath,"image.jpg"))
     
     with open(os.path.join(workpath,"value.txt"),"w") as file:
         file.write(value)
@@ -47,28 +42,94 @@ def get_filtered_image(image,action):
     k=0
     str1=""
     flag=False
+    
     for i in description:
         print(i)
         if(i=='r'):
             flag=True
-        if(i.isdigit() and k<=8 and flag==True):
+        elif(i.isdigit() and k<=8 and flag==True):
             str1=str1+i
             k+=1
-        if(i=="m"):
+        elif(i=="m"):
             flag=False   
     print(str1)        
+    """
+    final_digits=[]
+    for i in description:
+        if(i.isdigit()):
+            final_digits.append(i)
+    print(final_digits)  
+    print("Recognized Digits") 
+    #gas1 final_digits[10:18]
+    #gas2 final_digits[25:33]    
+    #str1=''.join(final_digits[10:18])  
+    str1=''.join(final_digits[25:33])  
+    """
+    print(str1) 
+       
     customer_no="01222345"
-    meter_reading=int(str1)
-    date1=date.today()
-    timestamp=int(datetime.timestamp(datetime.now()))
-    timestamp= datetime.fromtimestamp(timestamp)
-    db.execute("insert into"+" meter_readings("+'"consumer_no",'+'"meter_reading",'+'"date",'+'"timestamp"'+") "+f"values('{customer_no}',{meter_reading},'{date1}','{timestamp}')")
+    value=db.execute("select meter_reading,date from meter_readings where consumer_no="+f"'{customer_no}'")
+    list1=[]
+    flag1=False
+    for i in value:
+        list1.append(list(i))
+    if(int(list1[-1][0])>=int(str1)):
+        flag1=True
+    if(flag1==False):
+
+        meter_reading=str1
+        print(meter_reading)
+        date1=date.today()
+        timestamp=int(datetime.timestamp(datetime.now()))
+        timestamp= datetime.fromtimestamp(timestamp)
+        db.execute("insert into"+" meter_readings("+'"consumer_no",'+'"meter_reading",'+'"date",'+'"timestamp"'+") "+f"values('{customer_no}','{meter_reading}','{date1}','{timestamp}')")
+        value=db.execute("select meter_reading,date from meter_readings where consumer_no="+f"'{customer_no}'")
+        list1=[]
+        for i in value:
+            list1.append(list(i))
+        if(len(list1)>1):
+            meter=[]
+            print(list1[-1])
+            print(list1[-2])
+            meter.append((list1[-2][0]))
+            meter.append((list1[-1][0]))
+            date_value=(list1[-2][1]-list1[-1][1])
+            if int(str(date_value)[0])==0:
+                date_value=1
+            print(meter)
+            ans=int(meter[1][0:5])-int(meter[0][0:5]) 
+            print(ans)
+            scmd=ans/date_value
+            if(scmd<=0.60):
+                value=scmd*date_value
+                value=value*21.96
+            elif(0.61<=scmd<=1.50):
+                value1=0.60*date_value
+                value1=value1*21.96
+                scmd=scmd-0.60
+                value=scmd*date_value
+                value=value*26.01 
+                value=value1+value
+            elif(scmd>1.51):
+                value1=0.60*date_value
+                value1=value1*21.96
+                scmd=scmd-0.60
+                value2=0.90*date_value
+                scmd=scmd-0.90
+                value2=value2*26.01
+                value=scmd*date_value
+                value=value*33.36
+                value=value+value1+value2
+            date1=date.today()
+            db.execute(f"insert into billing(\"consumer_no\",\"pc_scmd\",\"bill_amount\",\"date\") values('{customer_no}',{scmd},{value},'{date1}');")
+    else:
+        print("Sorry the meter reading is faulty")    
 
 
     """
     print("This is image array",image)
-   
-    
+
+        
     os.environ["AWS_DEFAULT_REGION"]='us-west-2'
     workpath = os.path.dirname(os.path.abspath(__file__))
     c = open(os.path.join(workpath, 'new_user_credentials.csv'), 'r')
