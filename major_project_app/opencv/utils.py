@@ -1,5 +1,3 @@
-
-
 import csv
 import os
 import base64
@@ -68,16 +66,27 @@ def get_filtered_image(image,action):
     str1=''.join(final_digits[25:33])  
     """
     print(str1) 
-       
+     
     customer_no="01222345"
     value=db.execute("select meter_reading,date from meter_readings where consumer_no="+f"'{customer_no}'")
-    list1=[]
+    print(value)
+    value1=list(value)
+    print(value1)
     flag1=False
-    for i in value:
-        list1.append(list(i))
-    print(int(list1[-1][0]),int(str1))
-    if(int(list1[-1][0])<=int(str1)):
-        flag1=True
+    if(len(value1)>0):
+        list1=[]
+        
+        print(value)
+        for i in value1:
+            list1.append(list(i))
+        print(list1)
+        print(int(list1[-1][0]),int(str1))
+        check=[]
+        check.append(list1[-1][0])
+        check.append(str1)
+        print(check[0][0:5],check[1][0:5])
+        if(int(check[0][0:5])>=int(check[1][0:5])):
+            flag1=True
     if(flag1==False):
 
         meter_reading=str1
